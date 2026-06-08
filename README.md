@@ -1,95 +1,75 @@
 # Regional Dishes 🗺️
 
-An interactive map website where users can explore traditional recipes from different regions of the world. Click a pin on the map to discover the dish's history and full recipe.
+An interactive map for exploring traditional recipes from different regions of the world. Click a pin to discover a dish's history, ingredients and method. Switch to the Connections tab to see how dishes across countries cluster together by shared ingredients and cooking technique.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18 + Vite |
-| Mapping | Leaflet.js + D3.js |
-| Backend | Python / FastAPI |
-| Data | JSON flat files (upgradeable to a database) |
+| App | Python / Plotly Dash |
+| Maps | Plotly Scattermap (carto-darkmatter tiles) |
+| Charts | Plotly Graph Objects |
+| Styling | Dash Bootstrap Components (DARKLY theme) |
+| Data | JSON flat files |
+| ML | scikit-learn (k-means + t-SNE) |
 
 ## Project Structure
 
 ```
 regional-dishes/
-├── frontend/               # React application
-│   ├── public/
-│   └── src/
-│       ├── components/
-│       │   ├── Map/        # Leaflet + D3 map view
-│       │   ├── RecipeCard/ # Recipe detail card
-│       │   └── Sidebar/    # Sliding panel
-│       ├── hooks/          # API fetching helpers
-│       └── styles/
-├── backend/                # FastAPI application
-│   ├── app/
-│   │   ├── api/routes/     # Recipe & region endpoints
-│   │   ├── models/         # Pydantic schemas
-│   │   └── services/       # Data loading logic
-│   ├── data/               # JSON recipe & region data
-│   └── tests/
+├── backend/
+│   ├── app.py              # The entire Dash application
+│   ├── requirements.txt
+│   ├── HOW_IT_WORKS.md     # Code walkthrough and editing guide
+│   ├── data/
+│   │   ├── recipes.json    # 28 dishes with history, ingredients & steps
+│   │   ├── regions.json    # 16 regions with coordinates
+│   │   └── clusters.json   # ML output: clusters, t-SNE positions, connections
+│   └── ml/
+│       └── cluster_dishes.py   # Clustering pipeline (regenerates clusters.json)
 └── README.md
 ```
 
 ## Getting Started
 
-### Backend
-
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python3 -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env
-uvicorn app.main:app --reload
+python app.py
 ```
 
-API will be available at `http://localhost:8000`.  
-Interactive docs: `http://localhost:8000/docs`
+Open `http://127.0.0.1:8050` in your browser.
 
-### Frontend
+## Adding a New Dish
 
-```bash
-cd frontend
-npm install
-cp .env.example .env
-npm run dev
-```
+1. Add the recipe object to `backend/data/recipes.json` (follow the existing schema — id, name, region, country, coordinates, short_description, history, ingredients, steps, tags, cooking_method).
+2. Add its `id` to the correct region's `recipe_ids` list in `backend/data/regions.json`. If it's a new region, add a region entry too.
+3. Regenerate the ML clusters so the new dish appears in the Connections tab:
+   ```bash
+   python ml/cluster_dishes.py
+   ```
+4. Restart `app.py` — the pin appears on the map automatically.
 
-App will open at `http://localhost:5173`.
+## Changing the Number of Clusters
 
-### Running Tests
+Open `ml/cluster_dishes.py` and change `N_CLUSTERS = 6` to whatever you want, then re-run the script. Restart the app to pick up the new `clusters.json`.
 
-```bash
-cd backend
-pytest
-```
+## Coverage
 
-## Adding a New Recipe
-
-1. Add a region entry to `backend/data/regions.json` (if it's a new region).
-2. Add the full recipe object to `backend/data/recipes.json` following the existing schema.
-3. The pin will appear on the map automatically — no code changes needed.
-
-## Data Sources
-
-Recipe images and supplementary data are sourced from **[TheMealDB](https://www.themealdb.com/api.php)** — a free, open recipe database and JSON API.
-
-- Free API key `"1"` is used for development / educational use.
-- The script `backend/scripts/populate_from_mealdb.py` queries the API and backfills `image_url` (and any other missing fields) into `recipes.json`.
-- Run it any time you add new recipes: `python backend/scripts/populate_from_mealdb.py`
-- For production use, a paid TheMealDB supporter key is recommended (unlocks full dataset access).
-
-> TheMealDB API: https://www.themealdb.com/api.php  
-> License: free at point of access; see [TheMealDB Terms](https://www.themealdb.com/terms_of_use.php).
+| Country | Regions | Dishes |
+|---|---|---|
+| 🇬🇧 United Kingdom | Cornwall, Scotland (×2), Yorkshire (×2), Wales (×2), Lancashire (×2), Cumbria, Derbyshire, Berkshire | 14 |
+| 🇮🇹 Italy | Campania, Emilia-Romagna, Lombardy (×2), Sicily (×2), Tuscany (×3), Lazio (×2), Liguria (×2), Veneto | 14 |
 
 ## Roadmap
 
-- [ ] UK (Cornwall, Scotland) — proof of concept ✅
-- [ ] Expand to additional countries
-- [ ] Add search / filter by ingredient or tag
+- [x] UK proof of concept
+- [x] Expand to Italy
+- [x] ML clustering — dish connections by ingredient & cooking method
+- [x] Plotly Dash app (replaced React + FastAPI)
+- [ ] Add a third country
+- [ ] Search / filter by ingredient, tag or cooking method
+- [ ] Image support per dish
 - [ ] User-submitted recipes
-- [x] Image support via TheMealDB API
